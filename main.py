@@ -1,5 +1,6 @@
 import sys
 import os
+import json
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
@@ -7,9 +8,27 @@ from PyQt5.QtWebEngineWidgets import *
 
 WORKINGDIR = os.getcwd()
 
+# Read search engines file and extract default search engine URL
+with open("settings/searchEngines.json", "r") as f:
+    search_engines = json.load(f)
+
+default_index = 0
+with open("settings/clientSettings.json", "r") as f:
+    client_settings = json.load(f)
+    default_index = client_settings["preferred_search_engine_index"]
+
+default_search_url = search_engines["search_engines"][default_index]["url"]
+
 class Browser(QMainWindow):
     def __init__(self):
         super().__init__()
+
+        with open("settings/searchEngines.json", "r") as f:
+            self.search_engines = json.load(f)["search_engines"]
+
+        # Load the preferred search engine index from the clientSettings.json file
+        with open("settings/clientSettings.json", "r") as f:
+            preferred_search_engine_index = json.load(f)["preferred_search_engine_index"]
 
         # Create address bar and go button
         self.address_label = QLabel("Address:")
@@ -38,7 +57,7 @@ class Browser(QMainWindow):
         input_text = self.address_entry.text()
 
         if "." not in input_text:
-            input_text = "https://google.com/?q=" + input_text
+            input_text = default_search_url + input_text
         if not input_text[:4] == "http":
             input_text = "http://" + input_text
             self.address_entry.setText(input_text)
