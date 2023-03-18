@@ -18,28 +18,14 @@ with open("settings/clientSettings.json", "r") as f:
     default_index = client_settings["preferred_search_engine_index"]
 
 default_search_url = search_engines["search_engines"][default_index]["url"]
+default_search_name = search_engines["search_engines"][default_index]["name"]
 
 class Browser(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        with open("settings/searchEngines.json", "r") as f:
-            self.search_engines = json.load(f)["search_engines"]
-
-        # Load the preferred search engine index from the clientSettings.json file
-        with open("settings/clientSettings.json", "r") as f:
-            preferred_search_engine_index = json.load(f)["preferred_search_engine_index"]
-
-        # Create address bar and go button
-        self.address_label = QLabel("Address:")
-        self.address_entry = QLineEdit()
-        self.address_entry.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        self.address_entry.returnPressed.connect(self.fetch_page)
-
-        toolbar = QToolBar()
-        toolbar.addWidget(self.address_label)
-        toolbar.addWidget(self.address_entry)
-        self.addToolBar(toolbar)
+        self.coreLayout = QVBoxLayout()
+        self.navbar = QHBoxLayout()
 
         # Create web view to display web pages
         storage_path = "%LOCALAPPDATA%\\PyBrowse\\storage"
@@ -47,8 +33,44 @@ class Browser(QMainWindow):
         self.web_view = QWebEngineView()
         self.web_view.urlChanged.connect(self.url_changed)
 
-        self.web_view.setPage(QWebEnginePage(profile, self.web_view))
-        self.setCentralWidget(self.web_view)
+        # Create the navigation buttons
+        self.back_button = QPushButton("←")
+        self.back_button.clicked.connect(self.web_view.back)
+
+        self.forward_button = QPushButton("→")
+        self.forward_button.clicked.connect(self.web_view.forward)
+
+        self.refresh_button = QPushButton("↻")
+        self.refresh_button.clicked.connect(self.web_view.reload)
+
+        # Create address bar
+        self.address_entry = QLineEdit()
+        self.address_entry.setPlaceholderText(f"Search with {default_search_name} or enter address")
+        self.address_entry.returnPressed.connect(self.fetch_page)
+
+        self.navbar.addWidget(self.back_button)
+        self.navbar.addWidget(self.forward_button)
+        self.navbar.addWidget(self.refresh_button)
+        self.navbar.addWidget(self.address_entry)
+
+        self.coreLayout.addLayout(self.navbar)
+
+        navigation_layout = QHBoxLayout()
+        navigation_layout.addWidget(self.back_button)
+        navigation_layout.addWidget(self.forward_button)
+        navigation_layout.addWidget(self.refresh_button)
+
+        self.coreLayout.addWidget(self.web_view)
+
+        # Set the layout to the main window
+        central_widget = QWidget()
+        central_widget.setLayout(self.coreLayout)
+        self.setCentralWidget(central_widget)
+
+
+        #Styling
+        self.coreLayout.setContentsMargins(0,0,0,0)
+
 
     def url_changed(self):
         self.address_entry.setText(self.web_view.url().toString())
@@ -63,10 +85,16 @@ class Browser(QMainWindow):
             self.address_entry.setText(input_text)
             
         self.web_view.load(QUrl(input_text))
+        self.address_entry.clearFocus()
 
 
 # Create the application and start the main event loop
 app = QApplication(sys.argv)
 browser = Browser()
+
 browser.showMaximized()
+browser.setMinimumHeight(50)
+
+browser.setWindowTitle("PyBrowse")
+
 sys.exit(app.exec_())
